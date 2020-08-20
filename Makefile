@@ -62,14 +62,3 @@ check: $(CHECK77_EXE)
 
 physics: $(PHYSICS_EXE)
 	$(PHYSICS_EXE)
-
-
-# physics: fname = physics
-# physics: $(out_exe)
-# 	@echo $(out_exe)
-# 	@echo "Running physics program"
-# 	@$(out_exe)
-
-# $(out_exe): $(in_mortran) $(MORTRAN_DATA) $(MORTRAN_EXE)
-
-

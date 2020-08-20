@@ -1,5 +1,8 @@
-"#############################################################################"                                   "
-"  Copyright (C) 2015 National Research Council Canada                        "                                                     "
+%C80
+"#############################################################################"
+"                                                                             "
+"  Copyright (C) 2015 National Research Council Canada                        "
+"                                                                             "
 "  EGSnrc is free software: you can redistribute it and/or modify it under    "
 "  the terms of the GNU Affero General Public License as published by the     "
 "  Free Software Foundation, either version 3 of the License, or (at your     "
@@ -14,160 +17,132 @@
 "  along with EGSnrc. If not, see <http://www.gnu.org/licenses/>.             "
 "                                                                             "
 "#############################################################################"
-"                                                                             "
 
+"Compiler directives"
+"==================="
+%Q1         "Automatically close comments at end of line
+            "but NOTE, this doesn't happen inside a REPLACE macro
+            "you must open and close within a REPLACE macro.
+%C80        "Allow 80 columns of source/line (default is 72)
+!INDENT M2; "Indent Mortran compile listing 2 spaces each nesting level
+!INDENT F2; "Indent fortran output 2 spaces each nesting level
+%L          "Turn on listing
 
+%I4 "INDENT FOUR SPACES EACH LEVEL"
+
+%E
 "******************************************************************"
-subroutine init_compton;
-"
-"  Reads in bound Compton scattering data from unit $INCOHUNIT
-"  and performs necessary initializations
-"
-"  See definitions of variables in egsnrc.macros with definition
-"  of COMIN/COMPTON-DATA/
-"
-"  I.Kawrakow, January 99
+"                               National Research Council of Canada"
+SUBROUTINE ANNIH;
+"                                                                  "
 "******************************************************************"
+"   GAMMA SPECTRUM FOR TWO GAMMA IN-FLIGHT POSITRON ANNIHILATION.  "
+"   USING SCHEME BASED ON HEITLER'S P269-27O FORMULAE.             "
+"                                                                  "
+"   If the user requests radiative splitting (via nbr_split > 1),  "
+"   this routine produces 2*nbr_split annihilation photons at once,"
+"   each carying the fraction 1/nbr_split of the weight of the     "
+"   incident positron.                                             "
+"                                                                  "
+"   Except for taking out the calculation of                       "
+"   LOG((1.0-EP0)/EP0) out of the sampling loop and using a        "
+"   rejection function normalized to its maximum, the sampling     "
+"   technique is the same as the original EGS4 implementation.     "
+"                                                                  "
+"   I. Kawrakow, January 2000                                      "
+"                                                                  "
+"******************************************************************"
+$IMPLICIT-NONE;
 
-implicit none;
+$COMIN-ANNIH;    "DEFAULT REPLACEMENT PRODUCES THE FOLLOWING:      "
+                 "COMIN/DEBUG,STACK,UPHIOT,USEFUL,RANDOM,          "
+                 "EGS-VARIANCE-REDUCTION/;                         "
 
-$COMIN-INIT-COMPT;
+$DEFINE-LOCAL-VARIABLES-ANNIH;
+$INTEGER ip;
 
-$INTEGER i,j,iz,nsh,j_l,j_h;
-$REAL    aux,pztot,atav;
-$REAL    aux_erf,erf1;  "using erf1, provided with EGSnrc, because some"
-                        "compiler don't have an intrinsic error function"
-$LOGICAL getd;
+NPold = NP; "Set the old stack counter"
+IF( nbr_split <= 0 ) [ return; ]
+PAVIP=E(NP)+PRM; "PRECISE AVAILABLE ENERGY OF INCIDENT POSITRON,
+                 "i.e. electron assumed to be at rest
+AVIP=PAVIP;      "AVAILABLE ENERGY OF INCIDENT POSITRON"
+A=AVIP/RM;
+"AI=1.0/A;  AI not necessary, IK Oct 97"
+G=A-1.0;
+T=G-1.0;
+P=SQRT(A*T);
+POT=P/T;
+EP0=1.0/(A+P);
+"   SAMPLE 1/EP FROM EP=EP0 TO 1.0-EP0"
+"Take the calculation of the logarithm out of the loop, IK Oct 97"
+WSAMP=LOG((1.0-EP0)/EP0);
 
-" Initialize radiative Compton corrections, if needed "
-$RADC_HATCH;
-
-$need_bound_compton_data(getd);
-IF( ~getd ) [
-    IF( eadl_relax & photon_xsections = 'xcom' )[
-        $egs_fatal('(a,/a,/a)',
-                   'You must turn ON Compton binding corrections when using',
-                   'a detailed atomic relaxation (eadl_relax=true) since ',
-                   'binding energies taken from incoh.data below 1 keV!');
-    ]
-    $egs_info('(a/)',' Bound Compton scattering not requested! ');
-    return;
+aa = u(np); bb = v(np); cc = w(np);
+sinpsi = aa*aa + bb*bb;
+IF( sinpsi > 1e-20 ) [
+   sinpsi = sqrt(sinpsi);
+   sindel = bb/sinpsi; cosdel = aa/sinpsi;
 ]
 
-$egs_info('(/a$)','Bound Compton scattering requested, reading data ......');
-rewind($INCOHUNIT);
-DO j=1,18 [ read($INCOHUNIT,*); ]  "skip 1st 18 lines of comments"
-iz = 0;
-DO j=1,$MXTOTSH [
-    read($INCOHUNIT,*) iz_array(j),shn_array(j),ne_array(j),
-                       Jo_array(j),be_array(j);
-    Jo_array(j) = Jo_array(j)*137.;
-    be_array(j) = be_array(j)*1e-6/PRM;
-    aux_erf = 0.70710678119*(1+0.3*Jo_array(j));
-    erfJo_array(j) = 0.82436063535*(erf1(aux_erf)-1);
-                    "0.82436063535 is exp(0.5)/2"
+IF( nbr_split > 1 ) [ wt(np) = wt(np)/nbr_split; ]
 
-    "For detailed atomic relaxations set shell type
-    "to actual shell number and update binding energies
-    "with values from the photo-electric cross sections
-    IF (eadl_relax)[
-       IF (iz_array(j) ~= iz)[
-          shn_array(j) = 1; iz = iz_array(j);
-       ]
-       ELSE[
-          shn_array(j) = shn_array(j-1)+1;
-       ]
-       IF(binding_energies(shn_array(j),iz_array(j)) > 0)[
-         be_array(j) = binding_energies(shn_array(j),iz_array(j))/PRM;
-       ]
-       ELSE IF(photon_xsections = 'xcom') [
-         "Use binding energies from incoh.data below 1 keV"
-         binding_energies(shn_array(j),iz_array(j)) = be_array(j)*PRM;
-       ]
+DO ibr = 1,nbr_split [  "nbr_split > 1 means we want splitting for any"
+                        "radiative event                              "
+
+    IF( np+1 > $MXSTACK ) [
+        $egs_fatal('(//a,i6,a//)',' Stack overflow in ANNIH! np = ',np+1,
+                   ' Increase $MXSTACK and try again' );
     ]
+
+    LOOP[
+        $RANDOMSET RNNO01;
+        EP=EP0*EXP(RNNO01*WSAMP);
+        "   NOW DECIDE WHETHER TO ACCEPT"
+        $RANDOMSET RNNO02;
+        "REJF=1.0-EP+AI*AI*(2.0*G-1.0/EP);"
+        "The above rejection function has a maximum = 1 - 2/A**2"
+        "For efficiency, it is better to divide by the maximum value, IK Oct 97"
+        REJF = 1 - (EP*A-1)**2/(EP*(A*A-2));
+    ] UNTIL (RNNO02 <= REJF);
+
+
+    "   SET UP ENERGIES"
+    ESG1=AVIP*EP; "ENERGY OF SECONDARY GAMMA 1"
+    PESG1=ESG1; "PRECISE ENERGY OF SECONDARY GAMMA 1"
+    E(NP)=PESG1; IQ(NP)=0;
+    IF( ibr = 1 ) [ ip = npold; ] ELSE [ ip = np-1; ]
+    $TRANSFER PROPERTIES TO (np) FROM (ip);
+    COSTHE=MAX(-1.0,MIN(1.0,(ESG1-RM)*POT/ESG1));
+    SINTHE=SQRT(1.0-COSTHE*COSTHE);
+    $SELECT-AZIMUTHAL-ANGLE(cphi,sphi);
+    IF( sinpsi >= 1e-10 ) [
+        us = sinthe*cphi; vs = sinthe*sphi;
+        u(np) = cc*cosdel*us - sindel*vs + aa*costhe;
+        v(np) = cc*sindel*us + cosdel*vs + bb*costhe;
+        w(np) = cc*costhe - sinpsi*us;
+    ]
+    ELSE [
+        u(np) = sinthe*cphi; v(np) = sinthe*sphi; w(np) = cc*costhe;
+    ]
+    np = np + 1;
+    PESG2=PAVIP-PESG1; esg2 = pesg2;
+    e(np) = pesg2; iq(np) = 0;
+    $TRANSFER PROPERTIES TO (np) FROM (np-1);
+    COSTHE=MAX(-1.0,MIN(1.0,(ESG2-RM)*POT/ESG2));
+    SINTHE=-SQRT(1.0-COSTHE*COSTHE);
+    IF( sinpsi >= 1e-10 ) [
+        us = sinthe*cphi; vs = sinthe*sphi;
+        u(np) = cc*cosdel*us - sindel*vs + aa*costhe;
+        v(np) = cc*sindel*us + cosdel*vs + bb*costhe;
+        w(np) = cc*costhe - sinpsi*us;
+    ]
+    ELSE [
+        u(np) = sinthe*cphi; v(np) = sinthe*sphi; w(np) = cc*costhe;
+    ]
+    np = np + 1;
 
 ]
-$egs_info(*,' Done');
-$egs_info('(/a)',' Initializing Bound Compton scattering ......');
-DO medium = 1,nmed [
-    pztot = 0; nsh = 0;
-    DO i = 1, nne(medium) [
-        iz = int(zelem(medium,i));
-        DO j = 1, $MXTOTSH [
-            IF( iz = iz_array(j) ) [
-                nsh = nsh + 1;
-                IF( nsh > $MXMDSH ) [
-                    $egs_fatal('(/a,i3,a,i4,a/,a)',' For medium ',medium,
-                              ' the number of shells is > ',$MXMDSH,'!',
-                              ' Increase the parameter $MXMDSH! ');
-                ]
-                shell_array(nsh,medium) = j;
-                aux = pz(medium,i)*ne_array(j);
-                eno_array(nsh,medium) = aux;
-                pztot = pztot + aux;
-            ]
-        ]
-    ]
-    IF( nsh = 0 ) [
-        $egs_fatal('(a,i3,a)', ' Medium ',medium,' has zero shells! ');
-    ]
-    n_shell(medium) = nsh;
-    $egs_info('(a,i3,a,i3,a)', ' Medium ',medium,' has ',nsh,' shells: ');
-    DO i=1,nsh [
-        j = shell_array(i,medium);
-        eno_array(i,medium) = eno_array(i,medium)/pztot;
-        $egs_info('(i4,i5,i4,f9.5,e10.3,f10.3)',
-                  i,j,shn_array(j),eno_array(i,medium),
-                  Jo_array(j),be_array(j)*PRM*1000.);
-        eno_array(i,medium) = -eno_array(i,medium);
-        eno_atbin_array(i,medium) = i;
-    ]
-    atav = 1./nsh;
-    DO i=1,nsh-1 [
-        DO j_h = 1,nsh-1 [
-            IF( eno_array(j_h,medium) < 0 ) [
-                IF( abs(eno_array(j_h,medium)) > atav ) EXIT;
-            ]
-        ]
-        DO j_l = 1,nsh-1 [
-            IF( eno_array(j_l,medium) < 0 ) [
-                IF( abs(eno_array(j_l,medium)) < atav ) EXIT;
-            ]
-        ]
-        aux = atav - abs(eno_array(j_l,medium));
-        eno_array(j_h,medium) = eno_array(j_h,medium) + aux;
-        eno_array(j_l,medium) = -eno_array(j_l,medium)/atav + j_l;
-        eno_atbin_array(j_l,medium) = j_h;
-        IF( i = nsh-1 ) eno_array(j_h,medium) = 1 + j_h;
-    ]
-    DO i=1,nsh [
-        IF( eno_array(i,medium) < 0 ) [ eno_array(i,medium) = 1 + i; ]
-    ]
-]
+np = np-1;
 
-$egs_info('(a/)',' ...... Done.');
-
-$need_relaxation_data(getd);
-IF( getd ) return;
-$egs_fatal('(/a,/a,/a,/a)',
-' In subroutine init_compton: ',
-'   Scattering off bound electrons creates atomic vacancies,',
-'   potentially starting an atomic relaxation cascade. ',
-'   Please turn ON atomic relaxations.');
-/*
-Turning ON relaxations to setup relaxations for bound Compton
-and then turning it back OFF seems inconsistent. One should have
-relaxations for all interactions with atomic electrons.
-
-$egs_info('(a/,a/,a/,a//)',
-' In subroutine init_compton: ',
-'   fluorescence not set but relaxation data are required for ',
-'   bound Compton scattering. ',
-'   calling EDGSET. ');
-iedgfl(1) = 1;              "This was (2) originally  DR"
-eadl_relax = .true.;
-call edgset(1,1);
-iedgfl(1) = 0;              "This was (2) originally  DR"
-*/
-return;
-end;
+RETURN;
+"END OF SUBROUTINE ANNIH"   END;
