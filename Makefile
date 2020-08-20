@@ -37,6 +37,10 @@ export my_machine = linux
 export FLIBS = 
 export FOUT = -o 
 
+export CHECK77_F = $(BUILD_DIR)/check77_$(my_machine).f
+export CHECK77_MORTLST = $(BUILD_DIR)/check77_$(my_machine).mortlst
+export CHECK77_EXE = $(BUILD_DIR)/check77_$(my_machine).exe
+
 
 all: $(MORTRAN_DATA) $(MORTRAN_EXE)
 
@@ -50,12 +54,12 @@ $(MORTRAN_EXE): $(sources)
 	@echo "Compiling $(sources)"
 	@$(F77) $(FCFLAGS) $(FOPT) $(FOUT)$@ $(sources) $(FLIBS)
 
-check: check77_$(my_machine).exe
+check: $(CHECK77_EXE)
 	@echo "Running check77 test program"
-	@check77_$(my_machine).exe
+	@$(CHECK77_EXE)
 
-check77_$(my_machine).exe: check77.mortran
+$(CHECK77_EXE): check77.mortran
 	@echo "Mortran compiling check77 test program"
-	@$(MORTRAN_EXE) -s -d $(MORTRAN_DATA) -f check77.mortran -o7 check77_$(my_machine).f -o8 check77_$(my_machine).mortlst
+	@$(MORTRAN_EXE) -s -d $(MORTRAN_DATA) -f check77.mortran -o7 $(CHECK77_F) -o8 $(CHECK77_MORTLST)
 	@echo "Fortran compiling check77 test program"
-	@$(F77) $(FCFLAGS) $(FOPT) -o $@ check77_$(my_machine).f $(FLIBS)
+	@$(F77) $(FCFLAGS) $(FOPT) -o $@ $(CHECK77_F) $(FLIBS)
