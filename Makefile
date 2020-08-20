@@ -46,7 +46,11 @@ $(MORTRAN_DATA): mornew77.raw $(MORTRAN_EXE)
 	echo "Making mortran3.dat"
 	$(MORTRAN_EXE) -s -d mornew77.raw -o7 $@ -o8 mornew77.lst
 
-sources = mortran3.f ./lib/machine.f
+# standard_sources="\$(EGS_SOURCEDIR)egsnrc.macros \$(MACHINE_MACROS) \$(RANDOM).macros \$(USER_CODE).mortran \$(RANDOM).mortran \$(EGS_SOURCEDIR)nrcaux.mortran \$(MACHINE_MORTRAN) \$(EGS_SOURCEDIR)egsnrc.mortran"
+
+macros = ./egsnrc/egsnrc.macros ./egsnrc/ranmar.macros ./egsnrc/ranmar.mortran ./egsnrc/machine.macros ./egsnrc/machine.mortran
+
+sources = mortran3.f ./egsnrc/machine.f
 
 $(MORTRAN_EXE): $(sources)
 	echo "Compiling $(sources)"
@@ -54,8 +58,8 @@ $(MORTRAN_EXE): $(sources)
 
 
 ./build/%.exe : ./%.mortran
-	$(MORTRAN_EXE) -s -d $(MORTRAN_DATA) -f $< -o7 $(BUILD_DIR)/temp.f -o8 $(BUILD_DIR)/temp.mortlst
-	$(F77) $(FCFLAGS) $(FOPT) -o $@ $(BUILD_DIR)/temp.f $(FLIBS)
+	$(MORTRAN_EXE) -s -d $(MORTRAN_DATA) -f $(macros) $< -o7 $(BUILD_DIR)/temp.f -o8 $(BUILD_DIR)/temp.mortlst
+	$(F77) $(FCFLAGS) $(FOPT) $(FOUT)$@ $(BUILD_DIR)/temp.f $(FLIBS)
 
 check: $(CHECK77_EXE)
 	$(CHECK77_EXE)

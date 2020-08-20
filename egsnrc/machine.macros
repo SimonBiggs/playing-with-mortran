@@ -1,0 +1,67 @@
+%E
+%I4
+!INDENT F2;
+%C80
+%Q1
+"#############################################################################"
+"                                                                             "
+" EGSnrc machine dependent macro file for linux                               "
+"                                                                             "
+" Created by configure version 2.0 on Thu 20 Aug 2020 14:46:47 AEST           "
+"                                                                             "
+" You may add your own machine dependent macros to this file,                 "
+" but be carefull to not overwrite it if you re-run configure.                "
+"                                                                             "
+"#############################################################################"
+
+REPLACE {$MACHINE} WITH
+  {,'linux',};
+REPLACE {$HEN_HOUSE} WITH
+  {'/home/simon/git/EGSnrc/HEN_HOUSE/'};
+REPLACE {$CANONICAL_SYSTEM} WITH
+  {'x86_64-unknown-linux-gnu'};
+REPLACE {$CONFIGURATION_NAME} WITH
+  {'linux'};
+REPLACE {$EGS_CONFIG} WITH
+  {'/home/simon/git/EGSnrc/HEN_HOUSE/specs/linux.conf'};
+
+" System dependent stuff "
+"========================================"
+" Unfortunately, there appears to be no reliable way of copying files "
+" under Fortran => we use a system call for this"
+REPLACE {$copy_file} WITH {'cp '};
+
+" Although one can move files using Fortran's intrinsic rename, "
+" we don't know whether the user has not created additional files in "
+" the temporary working directory => it is easiest to use a system call "
+" to move all files from the temporary working directory to the user-code "
+" directory. "
+REPLACE {$move_file} WITH {'mv -f '};
+
+" There appears to be no way of removing a directory from Fortran "
+" => we use a system call for this. "
+REPLACE {$remove_directory} WITH {'rm -rf '};
+
+" The directory separator "
+REPLACE {$file_sep} WITH {'/'};
+
+REPLACE {$LONG_INT} WITH { integer*8 };
+REPLACE {$SHORT_INT} WITH { integer*2 };
+"$MAX_INT SET TO 2^63-1 in egsnrc.macros"
+"The machine byte order"
+REPLACE {$BYTE_ORDER} WITH {'1234'};
+;
+REPLACE {$RECL-FACTOR} WITH {4};
+;
+REPLACE {$FLUSH_UNIT(#);} WITH {call flush({P1});}
+;
+" If you want your user-code to return an exit status, use the "
+" following macro to terminate execution"
+REPLACE {$CALL_EXIT(#);} WITH {call exit({P1});}
+;
+" mortran3 gets confused by the # char => we need to pass it as an "
+" argument to the macro. "
+REPLACE {$HAVE_C_COMPILER(#);} WITH {{EMIT;{P1}define HAVE_C_COMPILER};}
+;
+REPLACE {$HAVE_LOAD_DSO(#);} WITH {{EMIT;{P1}define HAVE_LOAD_DSO};}
+;
