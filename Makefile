@@ -27,8 +27,15 @@
 #
 ###############################################################################
 
+export MORTRAN_DATA = ./bin/mortran3.dat  
+export MORTRAN_EXE = ./bin/mortran3.exe
+export F77 = gfortran
+export FCFLAGS = -fPIC
+export FOPT = -O2 -mtune=native
+export my_machine = linux
+export FLIBS = 
+export FOUT = -o 
 
-include $(EGS_CONFIG)
 
 all: $(MORTRAN_DATA) $(MORTRAN_EXE)
 
@@ -36,7 +43,7 @@ $(MORTRAN_DATA): mornew77.raw $(MORTRAN_EXE)
 	@echo "Making mortran3.dat"
 	@$(MORTRAN_EXE) -s -d mornew77.raw -o7 $@ -o8 mornew77.lst
 
-sources = mortran3.f $(EGS_LIBDIR)machine.f
+sources = mortran3.f  ./lib/machine.f
 
 $(MORTRAN_EXE): $(sources)
 	@echo "Compiling $(sources)"
