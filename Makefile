@@ -58,7 +58,7 @@ check: $(CHECK77_EXE)
 	@echo "Running check77 test program"
 	@$(CHECK77_EXE)
 
-$(CHECK77_EXE): check77.mortran
+$(CHECK77_EXE): check77.mortran $(MORTRAN_DATA) $(MORTRAN_EXE)
 	@echo "Mortran compiling check77 test program"
 	@$(MORTRAN_EXE) -s -d $(MORTRAN_DATA) -f check77.mortran -o7 $(CHECK77_F) -o8 $(CHECK77_MORTLST)
 	@echo "Fortran compiling check77 test program"
