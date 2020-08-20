@@ -48,7 +48,7 @@ $(MORTRAN_DATA): mornew77.raw $(MORTRAN_EXE)
 
 # standard_sources="\$(EGS_SOURCEDIR)egsnrc.macros \$(MACHINE_MACROS) \$(RANDOM).macros \$(USER_CODE).mortran \$(RANDOM).mortran \$(EGS_SOURCEDIR)nrcaux.mortran \$(MACHINE_MORTRAN) \$(EGS_SOURCEDIR)egsnrc.mortran"
 
-macros = ./egsnrc/egsnrc.macros ./egsnrc/ranmar.macros ./egsnrc/ranmar.mortran ./egsnrc/machine.macros ./egsnrc/machine.mortran
+macros = ./egsnrc/egsnrc.macros ./egsnrc/lnblnk1.mortran ./egsnrc/ranmar.macros ./egsnrc/ranmar.mortran ./egsnrc/machine.macros ./egsnrc/machine.mortran
 
 sources = mortran3.f ./egsnrc/machine.f
 
