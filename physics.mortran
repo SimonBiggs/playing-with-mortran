@@ -30,6 +30,13 @@
 
 %I4 "INDENT FOUR SPACES EACH LEVEL"
 
+
+OUTPUT; (//'          ranmar_test '//);
+OUTPUT;(///' End ranmar_test');
+$CALL_EXIT(0);
+END;
+
+
 %E
 "******************************************************************"
 "                               National Research Council of Canada"
