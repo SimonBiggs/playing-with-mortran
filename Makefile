@@ -29,6 +29,7 @@
 
 export MORTRAN_DATA = ./bin/mortran3.dat  
 export MORTRAN_EXE = ./bin/mortran3.exe
+export BUILD_DIR = ./build
 export F77 = gfortran
 export FCFLAGS = -fPIC
 export FOPT = -O2 -mtune=native
