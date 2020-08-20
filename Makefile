@@ -37,32 +37,39 @@ export my_machine = linux
 export FLIBS = 
 export FOUT = -o 
 
+export CHECK77_EXE = ./build/check77.exe
+export PHYSICS_EXE = ./build/physics.exe
+
 all: $(MORTRAN_DATA) $(MORTRAN_EXE)
 
 $(MORTRAN_DATA): mornew77.raw $(MORTRAN_EXE)
-	@echo "Making mortran3.dat"
-	@$(MORTRAN_EXE) -s -d mornew77.raw -o7 $@ -o8 mornew77.lst
+	echo "Making mortran3.dat"
+	$(MORTRAN_EXE) -s -d mornew77.raw -o7 $@ -o8 mornew77.lst
 
-sources = mortran3.f  ./lib/machine.f
+sources = mortran3.f ./lib/machine.f
 
 $(MORTRAN_EXE): $(sources)
-	@echo "Compiling $(sources)"
-	@$(F77) $(FCFLAGS) $(FOPT) $(FOUT)$@ $(sources) $(FLIBS)
-
-check: fname = check77
-check: $(out_exe)
-	@echo $(out_exe)
-	@echo "Running check77 test program"
-	@$(out_exe)
-
-$(out_exe): $(in_mortran) $(MORTRAN_DATA) $(MORTRAN_EXE)
-	@echo "Mortran compiling check77 test program"
-	@$(MORTRAN_EXE) -s -d $(MORTRAN_DATA) -f $(in_mortran) -o7 $(out_f) -o8 $(out_mortlst)
-	@echo "Fortran compiling check77 test program"
-	@$(F77) $(FCFLAGS) $(FOPT) -o $@ $(out_f) $(FLIBS)
+	echo "Compiling $(sources)"
+	$(F77) $(FCFLAGS) $(FOPT) $(FOUT)$@ $(sources) $(FLIBS)
 
 
-export in_mortran = $(fname).mortran
-export out_f = $(BUILD_DIR)/$(fname)_$(my_machine).f
-export out_mortlst=$(BUILD_DIR)/$(fname)_$(my_machine).mortlst
-export out_exe=$(BUILD_DIR)/$(fname)_$(my_machine).exe
+./build/%.exe : ./%.mortran
+	$(MORTRAN_EXE) -s -d $(MORTRAN_DATA) -f $< -o7 $(BUILD_DIR)/temp.f -o8 $(BUILD_DIR)/temp.mortlst
+	$(F77) $(FCFLAGS) $(FOPT) -o $@ $(BUILD_DIR)/temp.f $(FLIBS)
+
+check: $(CHECK77_EXE)
+	$(CHECK77_EXE)
+
+physics: $(PHYSICS_EXE)
+	$(PHYSICS_EXE)
+
+
+# physics: fname = physics
+# physics: $(out_exe)
+# 	@echo $(out_exe)
+# 	@echo "Running physics program"
+# 	@$(out_exe)
+
+# $(out_exe): $(in_mortran) $(MORTRAN_DATA) $(MORTRAN_EXE)
+
+
